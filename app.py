@@ -1,78 +1,62 @@
-# app.py
-import os
 import streamlit as st
-from create_database import generate_data_store, list_documents
 from query_data import query_function, debug_search
+from create_database import generate_data_store, list_documents
+import os
 
 DATA_PATH = "data/"
+
 os.makedirs(DATA_PATH, exist_ok=True)
 
 st.set_page_config(page_title="Portfolio Chatbot 🤖", layout="wide")
-
 st.title("📘 Portfolio RAG Chatbot")
-st.write("Upload .txt/.md/.docx files, rebuild index, ask questions.")
+st.write("Ask anything about your uploaded knowledge base.")
 
-# Chat section
-st.subheader("💬 Ask a question")
+# ---------------- CHAT AREA ----------------
+st.subheader("💬 Ask a Question")
 user_input = st.text_input("Your question:")
 
 if user_input:
-    with st.spinner("Searching..."):
+    with st.spinner("Thinking..."):
         answer, sources = query_function(user_input)
-    st.markdown("### 🤖 Answer")
-    st.write(answer)
+
+    st.markdown(f"### 🤖 Answer:\n{answer}")
+
     if sources:
         st.write("📌 Sources:")
-        for s in sources:
-            st.code(s)
+        for src in sources:
+            st.code(src)
     else:
-        st.info("No relevant sources found.")
+        st.warning("⚠️ No relevant sources found.")
 
-st.markdown("---")
+# ---------------- UPLOAD AREA ----------------
+st.subheader("📂 Upload Files (.txt / .md / .docx)")
+uploaded_files = st.file_uploader(
+    "Upload documents",
+    type=["txt", "md", "docx"],
+    accept_multiple_files=True,
+)
 
-# Upload files
-st.subheader("📂 Upload files (.txt / .md / .docx)")
-uploaded = st.file_uploader("Choose files", type=["txt", "md", "docx"], accept_multiple_files=True)
-auto_rebuild = st.checkbox("Auto rebuild after upload", True)
+auto_rebuild = st.checkbox("Auto rebuild database", value=True)
 
-if uploaded:
-    for f in uploaded:
-        path = os.path.join(DATA_PATH, f.name)
-        with open(path, "wb") as out:
-            out.write(f.getbuffer())
-    st.success(f"Uploaded {len(uploaded)} file(s).")
+if uploaded_files:
+    for file in uploaded_files:
+        save_path = os.path.join(DATA_PATH, file.name)
+        with open(save_path, "wb") as f:
+            f.write(file.read())
+    st.success(f"✅ Uploaded {len(uploaded_files)} file(s)!")
+
     if auto_rebuild:
-        with st.spinner("Rebuilding index..."):
-            if generate_data_store():
-                st.success("✅ Index rebuilt. Ready to ask questions!")
-            else:
-                st.error("❌ Rebuild failed. Check logs.")
+        with st.spinner("Rebuilding knowledge database..."):
+            generate_data_store()
+            st.success("✅ Database updated!")
+            st.experimental_rerun()
 
-# Manage documents
-st.subheader("🗑 Delete a file")
-docs = list_documents()
-if docs:
-    choice = st.selectbox("Select file to remove", docs)
-    if st.button("Delete"):
-        try:
-            os.remove(os.path.join(DATA_PATH, choice))
-            st.success(f"Deleted {choice}. Please rebuild index to remove it from memory.")
-        except Exception as e:
-            st.error(f"Error deleting: {e}")
-else:
-    st.info("No files uploaded yet.")
-
-# Manual rebuild button
-if st.button("🔄 Rebuild Knowledge DB"):
-    with st.spinner("Rebuilding index..."):
-        if generate_data_store():
-            st.success("✔️ Rebuild complete!")
-        else:
-            st.error("❌ Rebuild failed.")
-
-# Debug info
+# ---------------- DEBUG PANEL ----------------
 with st.expander("🛠 Debug Info"):
-    st.write("Files in data/:")
-    st.write(list_documents())
-    if st.button("Test search 'test'"):
-        st.write(debug_search("test"))
+    st.write("📄 Stored documents:")
+    docs = list_documents()
+    st.code("\n".join(docs) if docs else "No files found")
+
+    if st.button("Test Search: keyword = 'test'"):
+        debug_results = debug_search("test")
+        st.write(debug_results)
