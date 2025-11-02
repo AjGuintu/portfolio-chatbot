@@ -1,6 +1,7 @@
 streamlit
 openai
-langchain
+langchain>=1.0
+langchain-openai
 langchain-huggingface
 transformers
 sentence-transformers

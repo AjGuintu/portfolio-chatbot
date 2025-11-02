@@ -1,8 +1,8 @@
 # query_data.py
 import os
 import openai
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import OpenAIEmbeddingVectorStore
+from langchain_openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddingVectorStore
 from transformers import pipeline
 from dotenv import load_dotenv
 from langchain_huggingface import HuggingFacePipeline

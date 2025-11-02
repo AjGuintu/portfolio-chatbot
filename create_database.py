@@ -3,10 +3,10 @@ import os
 from pathlib import Path
 from typing import List
 import openai
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddingVectorStore
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import OpenAIEmbeddingVectorStore  # new
 from dotenv import load_dotenv
 
 load_dotenv()
