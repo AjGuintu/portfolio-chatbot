@@ -7,16 +7,18 @@ from query_data import query_function, debug_search
 DATA_PATH = "data/"
 os.makedirs(DATA_PATH, exist_ok=True)
 
-st.set_page_config(page_title="Portfolio Chatbot (Pinecone)", layout="wide")
-st.title("📘 Portfolio RAG Chatbot (Pinecone)")
-st.write("Upload .txt/.md/.docx files, rebuild the index, and ask questions.")
+st.set_page_config(page_title="Portfolio Chatbot 🤖", layout="wide")
 
-# Chat
+st.title("📘 Portfolio RAG Chatbot")
+st.write("Upload .txt/.md/.docx files, rebuild index, ask questions.")
+
+# Chat section
 st.subheader("💬 Ask a question")
-q = st.text_input("Your question:")
-if q:
+user_input = st.text_input("Your question:")
+
+if user_input:
     with st.spinner("Searching..."):
-        answer, sources = query_function(q)
+        answer, sources = query_function(user_input)
     st.markdown("### 🤖 Answer")
     st.write(answer)
     if sources:
@@ -28,50 +30,49 @@ if q:
 
 st.markdown("---")
 
-# Upload
+# Upload files
 st.subheader("📂 Upload files (.txt / .md / .docx)")
-files = st.file_uploader("Choose files", type=["txt", "md", "docx"], accept_multiple_files=True)
+uploaded = st.file_uploader("Choose files", type=["txt", "md", "docx"], accept_multiple_files=True)
 auto_rebuild = st.checkbox("Auto rebuild after upload", True)
 
-if files:
-    for f in files:
-        with open(os.path.join(DATA_PATH, f.name), "wb") as out:
+if uploaded:
+    for f in uploaded:
+        path = os.path.join(DATA_PATH, f.name)
+        with open(path, "wb") as out:
             out.write(f.getbuffer())
-    st.success(f"Uploaded {len(files)} file(s).")
+    st.success(f"Uploaded {len(uploaded)} file(s).")
     if auto_rebuild:
         with st.spinner("Rebuilding index..."):
-            ok = generate_data_store()
-            if ok:
-                st.success("Index rebuilt.")
+            if generate_data_store():
+                st.success("✅ Index rebuilt. Ready to ask questions!")
             else:
-                st.error("Index rebuild failed. Check logs.")
+                st.error("❌ Rebuild failed. Check logs.")
 
-# Delete file (removes file only — you'll manually rebuild per your B preference)
+# Manage documents
 st.subheader("🗑 Delete a file")
 docs = list_documents()
 if docs:
-    pick = st.selectbox("Select file to remove (this deletes file only)", docs)
-    if st.button("Delete file"):
+    choice = st.selectbox("Select file to remove", docs)
+    if st.button("Delete"):
         try:
-            os.remove(os.path.join(DATA_PATH, pick))
-            st.success(f"Deleted {pick}. Note: Run 'Rebuild Knowledge DB' to remove its vectors from Pinecone.")
+            os.remove(os.path.join(DATA_PATH, choice))
+            st.success(f"Deleted {choice}. Please rebuild index to remove it from memory.")
         except Exception as e:
-            st.error(f"Could not delete: {e}")
+            st.error(f"Error deleting: {e}")
 else:
-    st.info("No files in data/.")
+    st.info("No files uploaded yet.")
 
-# Rebuild button
+# Manual rebuild button
 if st.button("🔄 Rebuild Knowledge DB"):
-    with st.spinner("Rebuilding Pinecone index..."):
-        ok = generate_data_store()
-        if ok:
-            st.success("Rebuild complete.")
+    with st.spinner("Rebuilding index..."):
+        if generate_data_store():
+            st.success("✔️ Rebuild complete!")
         else:
-            st.error("Rebuild failed. Check console or logs.")
+            st.error("❌ Rebuild failed.")
 
-# Debug panel
-with st.expander("🛠 Debug"):
-    st.write("Local files:")
+# Debug info
+with st.expander("🛠 Debug Info"):
+    st.write("Files in data/:")
     st.write(list_documents())
     if st.button("Test search 'test'"):
         st.write(debug_search("test"))
